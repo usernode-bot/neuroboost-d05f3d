@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -64,7 +64,7 @@
   })();
   </script>
   <title>NeuroBoost</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%237c3aed'/><circle cx='50' cy='50' r='18' fill='white'/></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><g fill='none' stroke='%230f766e' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'><path d='M50 18c-12 0-20 7-17 17-8 5-7 17 2 21 0 9 11 14 15 9V18zM50 18c12 0 20 7 17 17 8 5 7 17-2 21 0 9-11 14-15 9V18z'/><path d='M37 38c5 0 8 3 8 7M63 38c-5 0-8 3-8 7'/></g></svg>">
   <!-- Tailwind, PRECOMPILED for this app (was cdn.tailwindcss.com's
        in-browser engine plus an inline tailwind.config here). The config
        moved to tailwind.config.js in the repo root; npm run build compiles
@@ -122,35 +122,49 @@
   <div data-spec-screen="1">
     <div>
     <div class="app">
+    <p class="small muted demo-note" id="demo-note" data-usernode-demo-note hidden>Staging demo : exemples de résultats</p>
     <div class="top"><div><p class="small muted">NeuroBoost</p><h1>Séance du jour</h1></div>
-    <svg width="72" height="72" viewBox="0 0 72 72" fill="none" stroke-width="5" stroke-linecap="round" role="img" aria-label="1 exercice sur 3"><circle cx="36" cy="36" r="30" stroke="rgb(230 226 220)"/><circle cx="36" cy="36" r="30" stroke="rgb(15 118 110)" stroke-dasharray="188" stroke-dashoffset="125" transform="rotate(-90 36 36)"/><g stroke="rgb(15 118 110)" stroke-width="2" stroke-linejoin="round"><path d="M35 25c-5 0-8 3-7 7-3 2-3 7 1 9 0 4 4 6 6 4V25zM37 25c5 0 8 3 7 7 3 2 3 7-1 9 0 4-4 6-6 4V25z"/><path d="M30 33c2 0 3 1 3 3M42 33c-2 0-3 1-3 3"/></g></svg></div>
+    <svg id="ring" width="72" height="72" viewBox="0 0 72 72" fill="none" stroke-width="5" stroke-linecap="round" role="img" aria-label="Aucun exercice terminé sur 3">
+      <circle class="ring-bg" cx="36" cy="36" r="30"/>
+      <circle class="ring-fg" id="ring-progress" cx="36" cy="36" r="30" stroke-dasharray="188" stroke-dashoffset="188" transform="rotate(-90 36 36)"/>
+      <g class="ring-brain" id="ring-brain" stroke-width="2" stroke-linejoin="round"><path d="M35 25c-5 0-8 3-7 7-3 2-3 7 1 9 0 4 4 6 6 4V25zM37 25c5 0 8 3 7 7 3 2 3 7-1 9 0 4-4 6-6 4V25z"/><path d="M30 33c2 0 3 1 3 3M42 33c-2 0-3 1-3 3"/></g>
+      <text class="ring-score" id="ring-score" x="36" y="43" text-anchor="middle" hidden></text>
+    </svg></div>
     <p class="muted" style="margin-top:8px">Trois exercices courts, environ deux minutes. La même série pour tout le monde aujourd'hui.</p>
-    <div class="steps">
-    <div class="d"><span></span><p class="small muted">Réaction</p></div>
-    <div class="c"><span></span><p class="small muted">Mémoire</p></div>
-    <div><span></span><p class="small muted">Mots</p></div>
+    <div class="steps" id="steps">
+    <div data-step="reaction"><span></span><p class="small muted">Réaction</p></div>
+    <div data-step="memory"><span></span><p class="small muted">Mémoire</p></div>
+    <div data-step="words"><span></span><p class="small muted">Mots</p></div>
     </div>
-    <div class="card">
-    <div class="top"><h2>2. Mémoire des cases</h2><span class="chip"><svg class="ic" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>Mémoire</span></div>
-    <p class="small muted" style="margin:4px 0 16px">Retenez les cases allumées, puis touchez-les dans la grille vide.</p>
-    <div class="grid"><div class="tile"></div><div class="tile on"></div><div class="tile"></div><div class="tile on"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile on"></div><div class="tile"></div></div>
-    <p class="small muted" style="margin-top:12px;text-align:center">5 manches, de 3 à 5 cases à retenir</p></div>
-    <button class="btn-primary" style="margin-top:16px">Commencer</button>
+    <div class="state-error" id="load-error" hidden>
+    <p>Vos résultats n'ont pas pu être chargés.</p>
+    <p class="small muted">La séance du jour et vos scores ne sont pas disponibles pour le moment.</p>
+    <button class="btn-secondary" id="retry-load" type="button">Réessayer</button>
+    </div>
+    <div class="card" id="exercise-card">
+    <div class="top"><h2 id="ex-title"><span class="skeleton sk-title"></span></h2></div>
+    <p class="small muted" id="ex-desc" style="margin:4px 0 16px"><span class="skeleton sk-line"></span></p>
+    <div id="ex-stage"><span class="skeleton sk-block"></span></div>
+    <p class="small muted" id="ex-note" style="margin-top:12px;text-align:center"><span class="skeleton sk-line"></span></p>
+    </div>
+    <button class="btn-primary" id="main-action" type="button" data-testid="start" style="margin-top:16px" hidden>Commencer</button>
     <p class="section-label">Résultats récents</p>
-    <ul class="list">
-    <li class="list-row"><span class="dot" style="background:rgb(var(--hit))"></span><div class="t"><p>Réaction rapide</p><p class="small muted">Aujourd'hui, 8:15</p></div><span class="score">86</span></li>
-    <li class="list-row"><span class="dot" style="background:rgb(var(--hit))"></span><div class="t"><p>Anagrammes</p><p class="small muted">Hier, 19:42</p></div><span class="score">80</span></li>
-    <li class="list-row"><span class="dot" style="background:rgb(var(--hit))"></span><div class="t"><p>Mémoire des cases</p><p class="small muted">Hier, 19:40</p></div><span class="score">72</span></li>
-    <li class="list-row"><span class="dot" style="background:rgb(var(--miss))"></span><div class="t"><p>Réaction rapide</p><p class="small muted">Hier, 19:38</p></div><span class="score">48</span></li>
-    </ul>
+    <ul class="list" id="recent-list"></ul>
+    <div class="state-empty" id="recent-empty" hidden>
+    <p>Pas encore de résultats. Votre première séance commence ci-dessus.</p>
+    </div>
+    <div id="progress-section" hidden>
     <p class="section-label">Votre progression</p>
-    <div class="card"><div class="top"><h2>Score moyen</h2><span class="score" style="font-size:20px">68</span></div>
+    <div class="card" id="progress-card"><div class="top"><h2>Score moyen</h2><span class="score" id="progress-avg" style="font-size:20px"></span></div>
     <p class="small muted">Vos 7 dernières séances</p>
-    <div class="bars"><i style="height:35%"></i><i style="height:48%"></i><i style="height:42%"></i><i style="height:60%"></i><i style="height:55%"></i><i style="height:72%"></i><i style="height:84%"></i></div>
-    <div class="days"><span>16 oct.</span><span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span></div></div>
+    <div class="bars" id="progress-bars"></div>
+    <div class="days" id="progress-days"></div></div>
+    </div>
     </div>
     </div>
   </div>
   <!-- /usernode-spec-screens@1 -->
+  <script src="/exercises.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>

@@ -8,5 +8,24 @@
   "governance": {
     "preset": "you_or_the_group"
   },
-  "tests": []
+  "tests": [
+    {
+      "name": "Today's workout loads",
+      "path": "/",
+      "expectSelector": "[data-testid=start]"
+    },
+    {
+      "name": "Empty results state",
+      "path": "/",
+      "expectText": "Pas encore de résultats"
+    },
+    {
+      "id": "demo",
+      "name": "Populated demo",
+      "path": "/?demo=1",
+      "expectText": "Anagrammes",
+      "visual": true,
+      "impact": ["public/**"]
+    }
+  ]
 }

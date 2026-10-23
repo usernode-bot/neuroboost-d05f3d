@@ -55,6 +55,12 @@ module.exports = {
         danger: token('danger'),
         'on-danger': token('on-danger'),
         focus: token('focus'), // the keyboard focus ring
+        hit: token('hit'), // correct rounds, lit squares, good scores
+        miss: token('miss'), // misses and scores under 50
+      },
+      // NeuroBoost's rounded system face; scores set tabular figures.
+      fontFamily: {
+        sans: ['ui-rounded', 'system-ui', 'sans-serif'],
       },
       // The type scale: four sizes, and nothing in between.
       fontSize: {

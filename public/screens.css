@@ -17,7 +17,9 @@
   background: rgb(var(--ground));
   color: rgb(var(--fg));
   min-height: 1160px;
-  width: 390px;
+  width: 100%;
+  max-width: 390px;
+  margin-inline: auto;
   box-sizing: border-box;
   padding: 20px 16px 32px;
   font-family: ui-rounded,system-ui,sans-serif;
@@ -86,3 +88,56 @@ p {margin:0}
 .days {display:flex;gap:6px;margin-top:4px}
 
 .days span {flex:1;text-align:center;font-size:12px;line-height:16px;color:rgb(var(--muted))}
+
+/* NeuroBoost's first version: the parts of the screen the drawing did not
+   show (the exercise states, the brain ring and the data states), drawn with
+   the same classes and tokens as the screen it belongs to. */
+
+.demo-note {margin:0 0 12px;padding:6px 10px;border:1px solid rgb(var(--line));border-radius:8px;background:rgb(var(--raised))}
+
+.ring-bg {stroke:rgb(var(--line))}
+.ring-fg {stroke:rgb(var(--accent))}
+.ring-brain {stroke:rgb(var(--accent))}
+.ring-score {fill:rgb(var(--fg));stroke:none;font:700 18px ui-rounded,system-ui,sans-serif;font-variant-numeric:tabular-nums}
+
+.sk-title {display:block;width:55%;height:20px}
+.sk-line {display:block;width:80%;height:12px;margin:2px 0}
+.sk-score {display:block;width:32px;height:16px}
+.sk-block {display:block;height:150px}
+.bars i.sk {background:rgb(var(--line));opacity:1}
+
+#ex-stage {border-radius:12px;transition:background-color .12s ease}
+.flash-hit {background:rgb(var(--hit)/.16)}
+.flash-miss {background:rgb(var(--miss)/.16)}
+
+.react-wrap {display:flex;flex-direction:column;align-items:center;gap:10px;padding:4px 0}
+.react-circle {width:168px;height:168px;padding:0;border-radius:50%;border:2px solid rgb(var(--line));background:rgb(var(--raised));cursor:pointer;-webkit-tap-highlight-color:transparent}
+.react-circle.go {background:rgb(var(--hit));border-color:rgb(var(--hit))}
+.react-circle:focus-visible {outline:3px solid rgb(var(--focus));outline-offset:3px}
+.react-circle.done {cursor:default}
+
+.tile {padding:0;cursor:pointer}
+.tile:focus-visible {outline:3px solid rgb(var(--focus));outline-offset:2px}
+.tile.found {background:rgb(var(--hit));border-color:rgb(var(--hit))}
+.tile.wrong {background:rgb(var(--miss));border-color:rgb(var(--miss))}
+.tile.locked {cursor:default}
+
+.word-form {display:flex;flex-direction:column;gap:12px}
+.jumble {font-size:28px;line-height:36px;font-weight:700;letter-spacing:.18em;text-align:center;color:rgb(var(--fg))}
+.word-row {display:flex;gap:8px}
+.word-row .field {flex:1;min-width:0}
+.word-meta {display:flex;align-items:center;justify-content:space-between;gap:8px}
+
+.result-box {display:flex;align-items:baseline;justify-content:center;gap:6px;padding:20px 0 8px}
+.result-score {font-size:48px;line-height:52px;font-weight:700;font-variant-numeric:tabular-nums}
+
+.session-scores {display:flex;flex-direction:column;margin:8px 0 0}
+.session-scores > div {display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:10px 0;border-top:1px solid rgb(var(--line))}
+.session-scores > div:first-child {border-top:0}
+
+.note-miss {color:rgb(var(--miss))}
+
+.list-row.row {flex-wrap:wrap;padding:0}
+.row-main {display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:12px 16px;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.row-main:focus-visible {outline:2px solid rgb(var(--focus));outline-offset:-2px}
+.row-delete {width:calc(100% - 32px);margin:0 16px 12px}

@@ -37,6 +37,11 @@ const GUEST_PUBLIC_KEY = (process.env.USERNODE_GUEST_JWT_PUBLIC_KEY || '')
 // Everything else requires a valid platform-issued JWT.
 const PUBLIC_API_PATHS = new Set(['/health']);
 
+// The three exercises of a day's workout, in the order they are played.
+const EXERCISES = ['reaction', 'memory', 'words'];
+const EXERCISE_SET = new Set(EXERCISES);
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 app.use(express.json());
 
 // The platform's three centrally hosted files — the bridge, the native UI
@@ -158,6 +163,216 @@ app.use((req, res, next) => {
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
+// ── NeuroBoost: one workout a day, three exercises ───────────────────────
+// A person's scores, one row per exercise per local day. Idempotent on
+// every boot, and staging-only rows: the table is private, so a staging
+// preview starts empty and the `?demo=1` rows are added to responses
+// rather than stored.
+async function ensureSchema() {
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS results (
+       id serial PRIMARY KEY,
+       user_id text NOT NULL,
+       exercise text NOT NULL CHECK (exercise IN ('reaction', 'memory', 'words')),
+       score integer NOT NULL CHECK (score >= 0 AND score <= 100),
+       day date NOT NULL,
+       created_at timestamptz NOT NULL DEFAULT now(),
+       UNIQUE (user_id, exercise, day)
+     )`);
+  await pool.query(`COMMENT ON TABLE results IS 'staging:private'`);
+}
+
+// The day as the person sees it, computed in the server's timezone.
+function dayString(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function addDays(day, offset) {
+  const d = new Date(day + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + offset);
+  return d.toISOString().slice(0, 10);
+}
+
+function daysBetween(a, b) {
+  const da = new Date(a + 'T00:00:00Z').getTime();
+  const db = new Date(b + 'T00:00:00Z').getTime();
+  return Math.round((da - db) / 86400000);
+}
+
+function rowOut(row) {
+  return {
+    id: row.id,
+    exercise: row.exercise,
+    score: row.score,
+    day: typeof row.day === 'string' ? row.day.slice(0, 10) : dayString(row.day),
+    created_at: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+  };
+}
+
+// Fixed sample results for the first version's populated demo, relative to
+// the day the page is looking at. 14 rows across 7 played days, all three
+// exercises, two under 50, and today's reaction exercise already done.
+function demoRows(baseDay) {
+  const plan = [
+    [0, 'reaction', 86, '08:15'],
+    [-1, 'memory', 72, '19:40'],
+    [-1, 'words', 92, '19:42'],
+    [-2, 'reaction', 65, '08:10'],
+    [-2, 'memory', 58, '08:12'],
+    [-2, 'words', 74, '08:14'],
+    [-3, 'reaction', 48, '08:20'],
+    [-3, 'memory', 41, '08:22'],
+    [-4, 'reaction', 77, '07:55'],
+    [-4, 'words', 71, '07:58'],
+    [-5, 'memory', 62, '18:30'],
+    [-5, 'words', 52, '18:33'],
+    [-6, 'reaction', 55, '09:05'],
+    [-6, 'words', 69, '09:08'],
+  ];
+  return plan.map(([offset, exercise, score, time], index) => ({
+    id: -(index + 1),
+    exercise,
+    score,
+    day: addDays(baseDay, offset),
+    created_at: `${addDays(baseDay, offset)}T${time}:00.000Z`,
+  }));
+}
+
+// Last 7 played days, oldest first, each with its rounded average.
+function summariseDays(rows) {
+  const byDay = new Map();
+  for (const row of rows) {
+    if (!byDay.has(row.day)) byDay.set(row.day, []);
+    byDay.get(row.day).push(row.score);
+  }
+  return [...byDay.entries()]
+    .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+    .slice(0, 7)
+    .map(([day, scores]) => ({
+      day,
+      average: Math.round(scores.reduce((sum, n) => sum + n, 0) / scores.length),
+    }))
+    .reverse();
+}
+
+function isDemo(req) {
+  return IS_STAGING && req.query.demo === '1';
+}
+
+// `today`, `recent` and `days` for one person. A guest, or a signed-in
+// person with no rows yet, gets the same shape empty.
+app.get('/api/summary', async (req, res) => {
+  const requested = typeof req.query.day === 'string' && DAY_RE.test(req.query.day)
+    ? req.query.day
+    : dayString(req.now);
+  try {
+    if (isDemo(req)) {
+      // Compute the whole answer from the viewer's real rows plus the fixed
+      // demo list, minus demo rows that would duplicate a real one.
+      let real = [];
+      if (req.user) {
+        const { rows } = await pool.query(
+          `SELECT id, exercise, score, day::text AS day, created_at
+             FROM results WHERE user_id = $1 ORDER BY created_at DESC, id DESC`,
+          [req.user.id]);
+        real = rows.map(rowOut);
+      }
+      const realKeys = new Set(real.map((r) => `${r.exercise}:${r.day}`));
+      const demo = demoRows(requested).filter((r) => !realKeys.has(`${r.exercise}:${r.day}`));
+      const merged = real.concat(demo)
+        .sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : b.id - a.id));
+      return res.json({
+        today: merged.filter((r) => r.day === requested),
+        recent: merged.slice(0, 10),
+        days: summariseDays(merged),
+      });
+    }
+
+    if (!req.user) return res.json({ today: [], recent: [], days: [] });
+
+    const [today, recent, days] = await Promise.all([
+      pool.query(
+        `SELECT id, exercise, score, day::text AS day, created_at
+           FROM results WHERE user_id = $1 AND day = $2
+          ORDER BY created_at ASC, id ASC`,
+        [req.user.id, requested]),
+      pool.query(
+        `SELECT id, exercise, score, day::text AS day, created_at
+           FROM results WHERE user_id = $1
+          ORDER BY created_at DESC, id DESC LIMIT 10`,
+        [req.user.id]),
+      pool.query(
+        `SELECT day::text AS day, ROUND(AVG(score))::int AS average
+           FROM results WHERE user_id = $1
+          GROUP BY day ORDER BY day DESC LIMIT 7`,
+        [req.user.id]),
+    ]);
+    return res.json({
+      today: today.rows.map(rowOut),
+      recent: recent.rows.map(rowOut),
+      days: days.rows.map((r) => ({ day: r.day, average: r.average })).reverse(),
+    });
+  } catch (err) {
+    console.error('summary failed: ' + err.message);
+    return res.status(500).json({ error: 'summary_failed' });
+  }
+});
+
+// One score for one exercise on one day. A second attempt that day answers
+// 409; the page then reloads the summary, which shows the saved score.
+app.post('/api/results', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'account_required' });
+  const { exercise, score, day } = req.body || {};
+  if (!EXERCISE_SET.has(exercise)) return res.status(400).json({ error: 'invalid_exercise' });
+  if (!Number.isInteger(score) || score < 0 || score > 100) {
+    return res.status(400).json({ error: 'invalid_score' });
+  }
+  if (typeof day !== 'string' || !DAY_RE.test(day)) return res.status(400).json({ error: 'invalid_day' });
+  // The person's own clock decides the day, but a day more than one away
+  // from the server's is a clock or a payload that cannot be trusted.
+  if (Math.abs(daysBetween(day, dayString(req.now))) > 1) {
+    return res.status(400).json({ error: 'invalid_day' });
+  }
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO results (user_id, exercise, score, day)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, exercise, day) DO NOTHING
+       RETURNING id, exercise, score, day::text AS day, created_at`,
+      [req.user.id, exercise, score, day]);
+    if (!rows.length) return res.status(409).json({ error: 'already_recorded' });
+    return res.status(201).json(rowOut(rows[0]));
+  } catch (err) {
+    console.error('save result failed: ' + err.message);
+    return res.status(500).json({ error: 'save_failed' });
+  }
+});
+
+// Deleting today's row reopens that exercise. A demo row (negative id)
+// exists only in the `?demo=1` answer, so it is never in the database: the
+// page drops it locally and this answers 204.
+app.delete('/api/results/:id', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'account_required' });
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'invalid_id' });
+  if (id < 0) {
+    if (isDemo(req)) return res.status(204).end();
+    return res.status(404).json({ error: 'not_found' });
+  }
+  try {
+    const { rowCount } = await pool.query(
+      'DELETE FROM results WHERE id = $1 AND user_id = $2', [id, req.user.id]);
+    if (!rowCount) return res.status(404).json({ error: 'not_found' });
+    return res.status(204).end();
+  } catch (err) {
+    console.error('delete result failed: ' + err.message);
+    return res.status(500).json({ error: 'delete_failed' });
+  }
+});
+
 // The template ships no favicon file; index.html carries an inline SVG
 // icon instead. Answer 204 here so anything that still probes
 // /favicon.ico (older browsers, direct visits) doesn't fall through to
@@ -204,9 +419,27 @@ app.get('*', (req, res) => {
 });
 
 async function start() {
+  await ensureSchema();
   const server = app.listen(port, () => console.log(`Listening on :${port}`));
   // Let Envoy retire idle upstream connections at 60s, with a 15s margin.
   server.keepAliveTimeout = 75_000;
+
+  // Stop accepting connections, give in-flight requests about 3 seconds,
+  // then close the pool and exit.
+  let shuttingDown = false;
+  function shutdown(signal) {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`${signal} received, shutting down`);
+    server.close(() => {
+      pool.end().finally(() => process.exit(0));
+    });
+    setTimeout(() => {
+      pool.end().finally(() => process.exit(0));
+    }, 3000).unref();
+  }
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 start().catch(err => { console.error(err); process.exit(1); });
