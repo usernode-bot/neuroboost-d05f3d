@@ -1,0 +1,88 @@
+/* The screens the spec drew, carried over by the platform before the first
+   version was built (screen 1 is public/index.html's main screen; screen 2,
+   if any, its <template data-spec-screen="2">). Colours are the design kit's
+   tokens, rgb(var(--accent)), so they follow the light and the dark look. */
+
+/* Each screen is one centred column: the phone width it was drawn at grows
+   to a readable column on a wider window, never rows and buttons stretched
+   across the window. Remove this only for an app that fills the window by
+   design, such as a map. */
+[data-spec-screen] {
+  width: 100%;
+  max-width: 42rem;
+  margin-inline: auto;
+}
+
+.app {
+  background: rgb(var(--ground));
+  color: rgb(var(--fg));
+  min-height: 1160px;
+  width: 390px;
+  box-sizing: border-box;
+  padding: 20px 16px 32px;
+  font-family: ui-rounded,system-ui,sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.app * {box-sizing:border-box}
+
+h1 {font-size:28px;line-height:36px;margin:0;font-weight:700}
+
+h2 {font-size:20px;line-height:28px;margin:0;font-weight:600}
+
+p {margin:0}
+
+.small {font-size:14px;line-height:20px}
+
+.muted {color:rgb(var(--muted))}
+
+.card {background:rgb(var(--surface));border:1px solid rgb(var(--line));border-radius:16px;padding:16px}
+
+.btn-primary {display:flex;width:100%;min-height:52px;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;background:rgb(var(--accent));color:rgb(var(--on-accent));font:600 16px ui-rounded,system-ui,sans-serif}
+
+.section-label {font-size:14px;line-height:20px;font-weight:500;color:rgb(var(--muted));margin:24px 4px 8px}
+
+.list {list-style:none;margin:0;padding:0;background:rgb(var(--surface));border:1px solid rgb(var(--line));border-radius:12px;overflow:hidden}
+
+.list-row {display:flex;align-items:center;gap:12px;min-height:44px;padding:12px 16px;border-top:1px solid rgb(var(--line))}
+
+.list-row:first-child {border-top:0}
+
+.list-row .t {flex:1}
+
+.score {font-weight:700;font-variant-numeric:tabular-nums}
+
+.dot {width:10px;height:10px;border-radius:50%;flex:none}
+
+.steps {display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:16px 0}
+
+.steps div {display:flex;flex-direction:column;gap:6px}
+
+.steps span {height:6px;border-radius:3px;background:rgb(var(--line))}
+
+.steps .d span {background:rgb(var(--accent))}
+
+.steps .c span {background:rgb(var(--accent)/.35)}
+
+.steps .c p {color:rgb(var(--fg));font-weight:600}
+
+.grid {display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+
+.tile {aspect-ratio:1;border-radius:12px;background:rgb(var(--raised));border:1px solid rgb(var(--line))}
+
+.tile.on {background:rgb(var(--hit));border-color:rgb(var(--hit))}
+
+.top {display:flex;justify-content:space-between;align-items:center;gap:12px}
+
+.chip {display:inline-flex;align-items:center;gap:4px;background:rgb(var(--raised));border-radius:999px;padding:2px 10px;font-size:14px;line-height:20px}
+
+.ic {width:18px;height:18px;flex:none;fill:none;stroke:rgb(var(--muted));stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+
+.bars {display:flex;gap:6px;align-items:flex-end;height:64px;margin-top:12px}
+
+.bars i {flex:1;background:rgb(var(--accent));border-radius:4px 4px 0 0;opacity:.85}
+
+.days {display:flex;gap:6px;margin-top:4px}
+
+.days span {flex:1;text-align:center;font-size:12px;line-height:16px;color:rgb(var(--muted))}
