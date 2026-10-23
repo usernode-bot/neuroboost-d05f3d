@@ -28,6 +28,7 @@
     loadError: document.getElementById('load-error'),
     retryLoad: document.getElementById('retry-load'),
     recent: document.getElementById('recent-list'),
+    recentLabel: document.getElementById('recent-label'),
     recentEmpty: document.getElementById('recent-empty'),
     progressSection: document.getElementById('progress-section'),
     progressAvg: document.getElementById('progress-avg'),
@@ -176,6 +177,8 @@
     }).length;
     var circumference = 188;
     el.ringProgress.setAttribute('stroke-dashoffset', String(circumference * (1 - done / 3)));
+    // A zero-length round-capped arc paints a dot at the top: draw nothing.
+    el.ringProgress.style.strokeOpacity = done === 0 ? '0' : '';
     if (done === 3 && !state.loading) {
       var scores = today.map(function (row) { return row.score; });
       var average = Math.round(scores.reduce(function (a, b) { return a + b; }, 0) / scores.length);
@@ -196,7 +199,7 @@
       var step = document.querySelector('[data-step="' + kind + '"]');
       if (!step) return;
       var isDone = today.some(function (row) { return row.exercise === kind; });
-      var isCurrent = !isDone && kind === state.current && state.phase !== 'done' && !state.loading;
+      var isCurrent = !isDone && kind === state.current && state.phase !== 'done' && state.phase !== 'error' && !state.loading;
       step.className = isDone ? 'd' : (isCurrent ? 'c' : '');
     });
   }
@@ -300,6 +303,7 @@
 
   function renderRecent() {
     if (state.loading) {
+      if (el.recentLabel) el.recentLabel.hidden = false;
       el.recent.hidden = false;
       el.recentEmpty.hidden = true;
       el.recent.innerHTML = '';
@@ -307,10 +311,12 @@
       return;
     }
     if (state.phase === 'error') {
+      if (el.recentLabel) el.recentLabel.hidden = true;
       el.recent.hidden = true;
       el.recentEmpty.hidden = true;
       return;
     }
+    if (el.recentLabel) el.recentLabel.hidden = false;
     var recent = state.data.recent || [];
     if (!recent.length) {
       el.recent.hidden = true;

@@ -114,11 +114,9 @@
   // The still picture of an exercise, shown before it starts.
   function preview(kind, stage, day) {
     if (kind === 'memory') {
-      var rng = rngFor(day, 'memory');
-      var lit = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8], rng).slice(0, 3);
       var cells = '';
       for (var i = 0; i < 9; i++) {
-        cells += '<div class="tile' + (lit.indexOf(i) >= 0 ? ' on' : '') + '"></div>';
+        cells += '<div class="tile"></div>';
       }
       stage.innerHTML = '<div class="grid">' + cells + '</div>';
       return;
