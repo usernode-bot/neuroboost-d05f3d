@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -64,7 +64,7 @@
   })();
   </script>
   <title>NeuroBoost</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%237c3aed'/><circle cx='50' cy='50' r='18' fill='white'/></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><g fill='none' stroke='%230f766e' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'><path d='M50 18c-12 0-20 7-17 17-8 5-7 17 2 21 0 9 11 14 15 9V18zM50 18c12 0 20 7 17 17 8 5 7 17-2 21 0 9-11 14-15 9V18z'/><path d='M37 38c5 0 8 3 8 7M63 38c-5 0-8 3-8 7'/></g></svg>">
   <!-- Tailwind, PRECOMPILED for this app (was cdn.tailwindcss.com's
        in-browser engine plus an inline tailwind.config here). The config
        moved to tailwind.config.js in the repo root; npm run build compiles
@@ -78,6 +78,7 @@
        classes, swap this link for the platform-hosted engine instead:
        <script src="/usernode-tailwind/v1/tailwind.js"></script> -->
   <link rel="stylesheet" href="/tailwind.css">
+  <link rel="stylesheet" href="/screens.css">
   <!-- The platform bridge, centrally hosted and loaded by RELATIVE path (the
        handler in server.js serves it under a plain "node server.js"; the
        platform's edge answers it everywhere else). Never vendor it and never
@@ -115,21 +116,55 @@
   <!-- (Named in prose on purpose: Tailwind compiles any class-name word in
        these files, comments included, and the starter should ship only the
        components its screen uses.) -->
-  <main class="mx-auto flex max-w-md flex-col gap-8 px-4 py-10">
-
-    <!-- usernode-starter-notice@1 — starter-template messaging. When building
-         the user's real app, replace this whole screen and delete this block,
-         both sentinel comments included. -->
-    <section class="card flex flex-col items-start gap-3">
-      <div class="flex h-20 w-20 items-center justify-center rounded-2xl border border-line bg-ground text-title">🧠</div>
-      <span class="rounded-full bg-raised px-3 py-1 text-small font-medium text-muted">Starter template</span>
-      <h1 class="text-title">NeuroBoost</h1>
-      <p class="text-body text-muted">Welcome to your new app! Everything on this screen is placeholder content that came with it.</p>
-      <p class="text-body text-muted">To change this app, ask Homeroom bot: tap the <strong class="font-semibold text-fg">Homeroom icon</strong>, then <strong class="font-semibold text-fg">Suggest an improvement</strong>. Describe what you'd like in plain English, and it will be turned into your real app.</p>
-    </section>
-    <!-- /usernode-starter-notice@1 -->
-
-    <p class="text-center text-small text-muted">Built on Homeroom. This template screen disappears once you build your real app.</p>
-  </main>
+  <!-- usernode-spec-screens@1: the screens the spec drew, carried over by the platform as this
+       first version's starting point. Their styles are in public/screens.css.
+       Change them where behaviour needs it; do not redraw them. -->
+  <div data-spec-screen="1">
+    <div>
+    <div class="app">
+    <p class="small muted demo-note" id="demo-note" data-usernode-demo-note hidden>Staging demo : exemples de résultats</p>
+    <div class="top"><div><p class="small muted">NeuroBoost</p><h1>Séance du jour</h1></div>
+    <svg id="ring" width="72" height="72" viewBox="0 0 72 72" fill="none" stroke-width="5" stroke-linecap="round" role="img" aria-label="Aucun exercice terminé sur 3">
+      <circle class="ring-bg" cx="36" cy="36" r="30"/>
+      <circle class="ring-fg" id="ring-progress" cx="36" cy="36" r="30" stroke-dasharray="188" stroke-dashoffset="188" transform="rotate(-90 36 36)"/>
+      <g class="ring-brain" id="ring-brain" stroke-width="2" stroke-linejoin="round"><path d="M35 25c-5 0-8 3-7 7-3 2-3 7 1 9 0 4 4 6 6 4V25zM37 25c5 0 8 3 7 7 3 2 3 7-1 9 0 4-4 6-6 4V25z"/><path d="M30 33c2 0 3 1 3 3M42 33c-2 0-3 1-3 3"/></g>
+      <text class="ring-score" id="ring-score" x="36" y="43" text-anchor="middle" hidden></text>
+    </svg></div>
+    <p class="muted" style="margin-top:8px">Trois exercices courts, environ deux minutes. La même série pour tout le monde aujourd'hui.</p>
+    <div class="steps" id="steps">
+    <div data-step="reaction"><span></span><p class="small muted">Réaction</p></div>
+    <div data-step="memory"><span></span><p class="small muted">Mémoire</p></div>
+    <div data-step="words"><span></span><p class="small muted">Mots</p></div>
+    </div>
+    <div class="card state-error" id="load-error" hidden>
+    <p>Vos résultats n'ont pas pu être chargés.</p>
+    <p class="small muted">La séance du jour et vos scores ne sont pas disponibles pour le moment.</p>
+    <button class="btn-primary" id="retry-load" type="button">Réessayer</button>
+    </div>
+    <div class="card" id="exercise-card">
+    <div class="top"><h2 id="ex-title"><span class="skeleton sk-title"></span></h2></div>
+    <p class="small muted" id="ex-desc" style="margin:4px 0 16px"><span class="skeleton sk-line"></span></p>
+    <div id="ex-stage"><span class="skeleton sk-block"></span></div>
+    <p class="small muted" id="ex-note" style="margin-top:12px;text-align:center"><span class="skeleton sk-line"></span></p>
+    </div>
+    <button class="btn-primary" id="main-action" type="button" data-testid="start" style="margin-top:16px" hidden>Commencer</button>
+    <p class="section-label" id="recent-label">Résultats récents</p>
+    <ul class="list" id="recent-list"></ul>
+    <ul class="list" id="recent-empty" hidden>
+    <li class="list-row"><p class="small muted">Pas encore de résultats. Votre première séance commence ci-dessus.</p></li>
+    </ul>
+    <div id="progress-section" hidden>
+    <p class="section-label">Votre progression</p>
+    <div class="card" id="progress-card"><div class="top"><h2>Score moyen</h2><span class="score" id="progress-avg" style="font-size:20px"></span></div>
+    <p class="small muted">Vos 7 dernières séances</p>
+    <div class="bars" id="progress-bars"></div>
+    <div class="days" id="progress-days"></div></div>
+    </div>
+    </div>
+    </div>
+  </div>
+  <!-- /usernode-spec-screens@1 -->
+  <script src="/exercises.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>

@@ -95,10 +95,13 @@ tables you've marked private), etc.
 
 ## About NeuroBoost
 
-Train your brain together with short daily drills
+Train your brain together with short daily drills.
 
-_(add a sentence or two more of product context here so Claude Code has a
-shared understanding of what this app is for)_
+Every day the app runs one fixed workout of three short exercises
+(reaction, memory, words), each scored out of 100. Results are kept per
+person on the server, and the screen shows the last 10 scores and the
+average of the last seven workout days. The app makes no health or medical
+claims and asks for no personal details.
 
 ## Your people's data
 
@@ -114,14 +117,18 @@ about, add it to `SKIP`. Keep the file and its mount in `server.js`.
 This app's look. The first real version fills in the blanks; every later
 change follows it, and updates it when a request changes the look on purpose.
 
-- **Palette:** _(name the accent, any second colour and the neutrals, e.g.
-  "accent: tomato red; second: basil green; neutrals: warm greys")_
-- **Signature element:** _(the one thing on screen drawn from this app's
-  subject, which no other app would have)_
-- **Type scale:** `text-title`, `text-heading`, `text-body`, `text-small`
-  _(change their sizes in `tailwind.config.js` if you must, not their number)_
-- **One fixed look:** _(only for an app drawn as its own scene, such as a
-  game: which look, and why. Otherwise delete this line.)_
+- **Palette:** warm neutrals (ground 250 248 245 light / 20 18 16 dark,
+  surface white / 31 28 25, raised 243 240 235 / 43 39 35), one teal action
+  colour (15 118 110 / 45 212 191, text 255 255 255 / 4 47 46), amber `hit`
+  (180 100 8 / 245 176 66) for correct rounds, lit squares and scores of 50
+  or more, and muted red `miss` (176 42 42 / 239 112 104) for misses and
+  scores under 50.
+- **Signature element:** the brain progress ring at the top right. It fills
+  by a third for each finished exercise, and once the day is done the ring
+  shows the day's score in place of the brain.
+- **Type scale:** `text-title`, `text-heading`, `text-body`, `text-small`,
+  in the rounded system face (`ui-rounded`, then `system-ui`); scores use
+  tabular figures.
 
 The kit is in `styles/tailwind-input.css`: colour tokens with a light and
 a dark value (named in `tailwind.config.js`), and a few components
@@ -151,6 +158,14 @@ Re-theme by changing the token values there, keeping every text pair at
 
 ## App-specific conventions
 
-_(optional — e.g. "all currency values stored as integer cents, not
-floats"; "the `posts` table is append-only"; "avoid adding new
-dependencies"; etc.)_
+- `results` holds one row per person, exercise and local day
+  (`UNIQUE (user_id, exercise, day)`). The day is the player's own calendar
+  day, sent by the page; the server accepts only a day within one day of its
+  own clock.
+- The `?demo=1` rows are fixed demo data merged into `GET /api/summary` on
+  staging only. They are never stored and have negative ids; a delete of
+  one answers 204 and the client drops it for that page load. Real scores
+  played in the demo are saved as ordinary rows.
+- Exercise content is seeded from the local `YYYY-MM-DD` string in
+  `public/exercises.js`, so it is the same for everyone that day and needs
+  no server round trip.
